@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#101537">
+    <meta name="description" content="Run into a forgotten world. Dodge ancient ruins, collect ember coins, and chase your best in Ruins of the Ember Temple.">
+    <title>Ruins of the Ember Temple</title>
+    <link rel="stylesheet" href="./style.css">
+    <script src="./game.js" defer></script>
+  </head>
+  <body>
+    <!-- UI contract: toggle `hidden` on screens; set #game-container data-state to
+         menu, loading, playing, paused, or game-over. Bind buttons by data-action,
+         settings by data-setting, and update the named score/timer/progress IDs.
+         Modal focus, keyboard shortcuts, audio, and touch gestures belong to game.js. -->
+    <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+      <defs>
+        <symbol id="icon-temple" viewBox="0 0 24 24"><path d="m12 3 9 5H3l9-5ZM5 10v8m5-8v8m4-8v8m5-8v8M3 21h18M3 18h18"/></symbol>
+        <symbol id="icon-play" viewBox="0 0 24 24"><path d="m9 5 11 7-11 7V5Z"/></symbol>
+        <symbol id="icon-arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol>
+        <symbol id="icon-sound" viewBox="0 0 24 24"><path d="m11 4-5 4H3v8h3l5 4V4Zm4 4a6 6 0 0 1 0 8m3-11a10 10 0 0 1 0 14"/></symbol>
+        <symbol id="icon-muted" viewBox="0 0 24 24"><path d="m11 4-5 4H3v8h3l5 4V4Zm5 5 6 6m0-6-6 6"/></symbol>
+        <symbol id="icon-settings" viewBox="0 0 24 24"><path d="M10 3h4l.7 3 2 .9 2.8-.9 2 3.5-2.1 2.1v2.3l2.1 2.1-2 3.5-2.8-.9-2 .9-.7 3h-4l-.7-3-2-.9-2.8.9-2-3.5 2.1-2.1v-2.3L2.5 9.5l2-3.5 2.8.9 2-.9.7-3Z"/><circle cx="12" cy="12" r="3"/></symbol>
+        <symbol id="icon-pause" viewBox="0 0 24 24"><path d="M7 5h3v14H7V5Zm7 0h3v14h-3V5Z"/></symbol>
+        <symbol id="icon-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+        <symbol id="icon-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m12 6 4 6-4 6-4-6 4-6Z"/></symbol>
+        <symbol id="icon-distance" viewBox="0 0 24 24"><path d="M5 20 9 4m6 0 4 16M12 4v3m0 4v3m0 4v2"/></symbol>
+        <symbol id="icon-spark" viewBox="0 0 24 24"><path d="m12 2 2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5L12 2Z"/></symbol>
+        <symbol id="icon-shield" viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/></symbol>
+        <symbol id="icon-magnet" viewBox="0 0 24 24"><path d="M5 3v10a7 7 0 0 0 14 0V3h-5v10a2 2 0 0 1-4 0V3H5Zm0 5h5m4 0h5"/></symbol>
+        <symbol id="icon-boost" viewBox="0 0 24 24"><path d="m13 2-9 12h7l-1 8 10-13h-8l1-7Z"/></symbol>
+        <symbol id="icon-restart" viewBox="0 0 24 24"><path d="M4 10a8 8 0 1 1 1 8M4 4v6h6"/></symbol>
+        <symbol id="icon-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7M5 9v12h14V9M9 21v-8h6v8"/></symbol>
+        <symbol id="icon-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 1 1 5 2c-2 1-2 2-2 3m0 3v.1"/></symbol>
+        <symbol id="icon-left" viewBox="0 0 24 24"><path d="m14 5-7 7 7 7"/></symbol>
+        <symbol id="icon-right" viewBox="0 0 24 24"><path d="m10 5 7 7-7 7"/></symbol>
+        <symbol id="icon-up" viewBox="0 0 24 24"><path d="m5 14 7-7 7 7"/></symbol>
+        <symbol id="icon-down" viewBox="0 0 24 24"><path d="m5 10 7 7 7-7"/></symbol>
+        <symbol id="icon-trophy" viewBox="0 0 24 24"><path d="M7 3h10v7a5 5 0 0 1-10 0V3Zm0 2H3v3a4 4 0 0 0 4 4m10-7h4v3a4 4 0 0 1-4 4m-5 3v6m-5 0h10"/></symbol>
+        <symbol id="icon-leaf" viewBox="0 0 24 24"><path d="M20 3C8 2 2 8 5 15s16 5 15-12ZM4 21 16 9"/></symbol>
+        <symbol id="icon-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+      </defs>
+    </svg>
+
+    <main id="game-container" class="game-shell" data-state="menu" aria-label="Ruins of the Ember Temple game">
+      <canvas id="game-canvas" class="game-canvas" width="1920" height="1080" tabindex="0" aria-label="Temple runner game. Use left and right arrows to change lanes, up to jump, down to slide, and Escape to pause.">
+        Your browser does not support the game canvas. Try a current browser with canvas support.
+      </canvas>
+
+      <div class="temple-backdrop" aria-hidden="true">
+        <svg class="temple-art" viewBox="0 0 1000 1000" preserveAspectRatio="xMidYMid slice" focusable="false">
+          <defs>
+            <linearGradient id="sky-gradient" x1="0" y1="0" x2="0.8" y2="1"><stop stop-color="#203b78"/><stop offset=".48" stop-color="#9a4c79"/><stop offset="1" stop-color="#101534"/></linearGradient>
+            <linearGradient id="stone-gradient" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d49b62"/><stop offset=".45" stop-color="#985b56"/><stop offset="1" stop-color="#303452"/></linearGradient>
+            <linearGradient id="stone-light" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffe0a0"/><stop offset="1" stop-color="#bd6e69"/></linearGradient>
+            <linearGradient id="path-gradient" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#d9ae72"/><stop offset="1" stop-color="#2c3858"/></linearGradient>
+            <radialGradient id="sun-gradient"><stop stop-color="#ffe39a" stop-opacity=".7"/><stop offset=".45" stop-color="#ff9b89" stop-opacity=".18"/><stop offset="1" stop-color="#8f5ac9" stop-opacity="0"/></radialGradient>
+            <radialGradient id="ember-gradient"><stop stop-color="#fff09b" stop-opacity=".9"/><stop offset=".2" stop-color="#ff825f" stop-opacity=".35"/><stop offset="1" stop-color="#e9578a" stop-opacity="0"/></radialGradient>
+            <linearGradient id="door-gradient" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#10132b"/><stop offset=".7" stop-color="#4a2452"/><stop offset="1" stop-color="#ffd05a"/></linearGradient>
+            <linearGradient id="mist-gradient" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#a1f1f0" stop-opacity="0"/><stop offset=".55" stop-color="#a1f1f0" stop-opacity=".13"/><stop offset="1" stop-color="#a1f1f0" stop-opacity="0"/></linearGradient>
+          </defs>
+          <path fill="url(#sky-gradient)" d="M0 0h1000v1000H0z"/>
+          <circle cx="580" cy="230" r="360" fill="url(#sun-gradient)"/>
+          <path d="M270 0 535 640h75L420 0Zm220 0 132 650h52L590 0Z" fill="#c6c699" opacity=".055"/>
+          <!-- Distant jungle and the sanctuary's stepped silhouette. -->
+          <path d="M0 470 35 400l27 29 45-119 42 72 39-129 36 95 40-82 38 116 46-98 42 73 46-58 48 91 31-87 40 54 37-100 34 43 56-130 32 134 43-44 27 82 44-130 28 67 43-50 24 92 42-45 33 75 36-40v544H0Z" fill="#233a2d" opacity=".6"/>
+          <path d="m320 540 60-115h52v-92h60v-76h141v76h63v92h51l72 115Z" fill="#24372a" opacity=".55"/>
+          <path d="M228 638h611v79H228z" fill="#273a2d"/>
+          <path d="m277 579 43-37h447l45 37v82H277Z" fill="url(#stone-gradient)"/>
+          <path d="M309 503h463v80H309z" fill="url(#stone-gradient)"/>
+          <path d="m337 450 37-25h322l48 25v55H337Z" fill="url(#stone-gradient)"/>
+          <path d="M383 353h310v100H383z" fill="url(#stone-gradient)"/>
+          <path d="m365 351 36-30h272l38 30Z" fill="url(#stone-light)"/>
+          <path d="M430 265h219v58H430z" fill="url(#stone-gradient)"/>
+          <path d="m418 266 31-22h178l34 22Z" fill="url(#stone-light)"/>
+          <path d="M477 212h125v34H477z" fill="url(#stone-gradient)"/>
+          <path d="m469 213 31-20h81l31 20Z" fill="url(#stone-light)"/>
+          <path d="M532 173h15v21h-15z" fill="#b4aa7e"/>
+          <!-- Weathered lintels, columns, and block seams. -->
+          <g fill="none" stroke="#a6a487" stroke-opacity=".3" stroke-width="3">
+            <path d="M431 286h216M432 311h215M386 377h304M386 404h304M344 479h393M317 528h451M283 606h519M234 676h598"/>
+            <path d="M475 268v17m62 1v25m65-45v20m-157 69v21m60 1v26m112-49v23m-45 27v22M391 453v25m68 1v24m171-53v28m63 1v23M367 504v24m73 0v51m212-77v25m57 0v51M335 583v24m82 0v52m279-78v27m63 0v51"/>
+          </g>
+          <path d="M491 353h93v100h-93z" fill="url(#door-gradient)"/>
+          <path d="m491 353 46-24 47 24" fill="#171f17"/>
+          <path d="M483 353h10v100h-10zm99 0h10v100h-10z" fill="#9a9470"/>
+          <path d="M475 451h126v9H475z" fill="#b7aa7f"/>
+          <path d="M408 354h23v96h-23zm236 0h23v96h-23z" fill="#778066"/>
+          <path d="M404 351h31v10h-31zm236 0h31v10h-31zM403 438h32v12h-32zm236 0h32v12h-32z" fill="#92977a"/>
+          <path d="m501 459-51 178h178l-53-178Z" fill="url(#path-gradient)"/>
+          <g fill="none" stroke="#b5ad87" stroke-opacity=".6" stroke-width="3">
+            <path d="M497 472h82m-86 13h90m-94 14h98m-103 17h108m-114 21h120m-127 25h134m-142 27h151m-161 30h171"/>
+          </g>
+          <path d="m450 637-198 363h575L628 637Z" fill="url(#path-gradient)"/>
+          <g fill="none" stroke="#849076" stroke-opacity=".25" stroke-width="3">
+            <path d="M428 681h224m-254 55h285m-326 72h367m-428 104h490M505 637l-70 363m144-363 76 363"/>
+          </g>
+          <!-- Overgrown stone guardians and torchlight. -->
+          <path d="M320 573h35v79h-35zm-9 65h54v28h-54zm7-85 8-22h24l9 22v27h-41Z" fill="#727a5d"/>
+          <path d="M721 573h35v79h-35zm-9 65h54v28h-54zm7-85 8-22h24l9 22v27h-41Z" fill="#727a5d"/>
+          <path d="m324 558 9 4m9 0 9-4m377 0 8 4m10 0 9-4" stroke="#263a2b" stroke-width="4"/>
+          <g fill="#3e5133"><path d="m381 354 33-26 10 39-17 30-10-13-2 36-13-13Zm250-102 18 3 18 28-14 41-9-22-15 18-8-26ZM297 504l36-4 16 33-20 33-4-21-29 24ZM703 444l39 6-6 43-19-15-14 28-9-33Z"/></g>
+          <g fill="#baa065"><path d="M463 424h8v25h-8zm142 0h8v25h-8zM362 623h10v49h-10zm342 0h10v49h-10z"/></g>
+          <g fill="url(#ember-gradient)"><circle cx="467" cy="420" r="55"/><circle cx="609" cy="420" r="55"/><circle cx="367" cy="619" r="75"/><circle cx="709" cy="619" r="75"/></g>
+          <g fill="#e8bd72"><path d="M461 425q-7-9 5-22-1 10 7 14 2 9-12 8Zm142 0q-7-9 5-22-1 10 7 14 2 9-12 8ZM360 625q-6-12 7-28-1 11 9 21 1 13-16 7Zm342 0q-6-12 7-28-1 11 9 21 1 13-16 7Z"/></g>
+          <path d="M0 574h1000v232H0z" fill="url(#mist-gradient)"/>
+          <!-- Foreground canopy creates a natural vignette. -->
+          <g fill="#10271c">
+            <path d="M0 0h157l-24 166-39 93-7 128L39 522 0 545Z"/>
+            <path d="M0 86q145 14 217 106-82-23-107-1 76 29 125 87-111-12-146-49 29 109 63 158-95-25-133-150Z"/>
+            <path d="M0 902q88-160 233-166-51 40-63 71 66-41 127-29-75 40-91 88 110-39 162-13-132 35-150 97l-34 50H0Z"/>
+            <path d="M1000 0H862l30 165 22 103-10 111 55 119 41 15Z"/>
+            <path d="M1000 113q-142 24-214 113 84-24 111-3-81 38-122 92 96-5 145-52-27 96-80 160 100-29 132-143Z"/>
+            <path d="M1000 855q-97-151-242-141 62 37 80 74-75-36-132-15 92 37 116 77-87-26-151-4 111 29 146 86l29 68h154Z"/>
+          </g>
+          <g fill="none" stroke="#395136" stroke-width="2" opacity=".6"><path d="M124 0q-48 198 39 281t-15 201M902 0q-63 147-12 258t-54 232"/></g>
+          <g fill="#eac17a" opacity=".75"><circle cx="415" cy="632" r="2"/><circle cx="647" cy="588" r="2"/><circle cx="456" cy="715" r="2.5"/><circle cx="690" cy="752" r="2"/><circle cx="559" cy="497" r="1.5"/><circle cx="374" cy="548" r="1.5"/><circle cx="759" cy="492" r="2"/></g>
+        </svg>
+        <div class="scene-shade"></div>
+        <div class="ember ember-one"></div><div class="ember ember-two"></div><div class="ember ember-three"></div>
+      </div>
+
+      <section id="main-menu" class="main-menu" aria-labelledby="game-title">
+        <header class="menu-header">
+          <a class="wordmark" href="#main-menu" aria-label="Ember Temple home">
+            <span class="brand-mark"><svg class="icon" aria-hidden="true"><use href="#icon-temple"/></svg></span>
+            <span>EMBER<span class="wordmark-sub">TEMPLE</span></span>
+          </a>
+          <span class="header-caption">AN ENDLESS EXPEDITION</span>
+          <div class="header-actions">
+            <button id="mute-button" class="icon-button" type="button" data-action="toggle-mute" aria-label="Mute audio" aria-pressed="false" title="Mute audio (M)">
+              <svg class="icon sound-on" aria-hidden="true"><use href="#icon-sound"/></svg><svg class="icon sound-off" aria-hidden="true"><use href="#icon-muted"/></svg>
+            </button>
+            <button id="menu-settings-button" class="icon-button" type="button" data-action="open-settings" aria-label="Open settings" aria-haspopup="dialog" aria-controls="settings-modal" title="Settings">
+              <svg class="icon" aria-hidden="true"><use href="#icon-settings"/></svg>
+            </button>
+          </div>
+        </header>
+
+        <div class="menu-content">
+          <div class="menu-hero">
+            <div class="eyebrow"><span class="status-dot"></span> THE TEMPLE IS AWAKE <span class="eyebrow-line"></span></div>
+            <h1 id="game-title"><span class="title-preface">Ruins of the</span><span class="title-ember">Ember</span><span class="title-temple">Temple<span class="title-period">.</span></span></h1>
+            <p class="hero-description">Some secrets are worth running for.<br>Enter the ruins. Chase the embers.<br class="mobile-break"> Leave your legend behind.</p>
+            <div class="menu-buttons mode-buttons">
+              <button id="adventure-button" class="button button-primary start-button" type="button" data-action="start-adventure">
+                <svg class="icon" aria-hidden="true"><use href="#icon-temple"/></svg><span>Adventure</span><svg class="icon button-arrow" aria-hidden="true"><use href="#icon-arrow"/></svg>
+              </button>
+              <button id="start-button" class="button button-secondary start-button" type="button" data-action="start-endless">
+                <svg class="icon" aria-hidden="true"><use href="#icon-play"/></svg><span>Endless run</span><svg class="icon button-arrow" aria-hidden="true"><use href="#icon-arrow"/></svg>
+              </button>
+            </div>
+            <div class="menu-buttons secondary-menu-buttons">
+              <button class="button button-quiet" type="button" data-action="open-characters">Characters</button>
+              <button class="button button-quiet" type="button" data-action="open-upgrades">Upgrades</button>
+              <button class="button button-quiet" type="button" data-action="open-collection">Collection</button>
+              <button class="button button-quiet" type="button" data-action="open-missions">Missions</button>
+              <button class="button button-quiet" type="button" data-action="open-achievements">Achievements</button>
+              <button class="button button-quiet" type="button" data-action="open-leaderboard">Leaderboard</button>
+              <button id="how-to-play-button" class="button button-quiet" type="button" data-action="open-help" aria-haspopup="dialog" aria-controls="how-to-play-modal">How to play</button>
+            </div>
+            <div class="personal-bests" aria-label="Personal records">
+              <div class="personal-best"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"/></svg><div><span class="stat-label">BEST SCORE</span><span id="best-score" class="best-value">0</span></div></div>
+              <span class="stat-divider" aria-hidden="true"></span>
+              <div class="personal-best"><svg class="icon" aria-hidden="true"><use href="#icon-distance"/></svg><div><span class="stat-label">LONGEST RUN</span><span class="best-value"><span id="best-distance">0</span><span class="unit">m</span></span></div></div>
+              <span class="stat-divider" aria-hidden="true"></span>
+              <div class="personal-best"><svg class="icon" aria-hidden="true"><use href="#icon-coin"/></svg><div><span class="stat-label">TREASURE</span><span class="best-value"><span id="wallet-coins">0</span></span></div></div>
+            </div>
+          </div>
+          <div class="scene-caption" aria-hidden="true"><span class="scene-coordinate">13° 24′ N &nbsp; 103° 52′ E</span><span class="scene-caption-line"></span><span class="scene-name">The forgotten sanctum</span><span class="scene-chapter">CHAPTER I · INTO THE WILD</span></div>
+        </div>
+
+        <footer class="menu-footer">
+          <div class="adventure-note"><svg class="icon" aria-hidden="true"><use href="#icon-leaf"/></svg><span>A lost world. An endless adventure.</span></div>
+          <span class="keyboard-hint">Press <kbd>Space</kbd> to begin</span>
+          <span class="footer-edition">EXPEDITION / 001</span>
+        </footer>
+      </section>
+
+      <section id="loading-screen" class="overlay loading-screen" aria-labelledby="loading-title" aria-busy="true" hidden>
+        <div class="loading-content">
+          <span class="loading-emblem"><svg class="icon" aria-hidden="true"><use href="#icon-temple"/></svg></span>
+          <p class="eyebrow">BEYOND THE CANOPY</p>
+          <h2 id="loading-title">The ruins are calling.</h2>
+          <p id="loading-message" class="muted">Preparing your expedition…</p>
+          <div class="loading-progress-label"><label for="loading-progress">Loading the temple</label><span id="loading-percent">0%</span></div>
+          <progress id="loading-progress" class="loading-progress" value="0" max="100">0%</progress>
+          <p class="loading-tip"><svg class="icon" aria-hidden="true"><use href="#icon-spark"/></svg>Follow the coins. Keep an eye on the path.</p>
+        </div>
+      </section>
+
+      <section id="hud" class="hud" aria-label="Run statistics and controls" hidden>
+        <div class="hud-brand" aria-hidden="true"><svg class="icon" aria-hidden="true"><use href="#icon-temple"/></svg></div>
+       <div class="hud-stats">
+          <div class="hud-stat hud-score"><span class="stat-label">SCORE</span><span id="score" class="hud-value">0</span></div>
+          <div class="hud-stat"><span class="stat-label">DISTANCE</span><span class="hud-value"><span id="distance">0</span><span class="unit">m</span></span></div>
+          <div class="hud-stat hud-coins"><span class="stat-label"><svg class="icon" aria-hidden="true"><use href="#icon-coin"/></svg> COINS</span><span id="coins" class="hud-value">0</span></div>
+         <div class="hud-stat hud-multiplier"><span class="stat-label">MULTIPLIER</span><span class="hud-value">×<span id="multiplier">1</span></span></div>
+        </div>
+        <div class="hud-adventure-status"><span id="hud-biome" class="hud-biome">SANDSTONE TEMPLE</span><span id="hud-objective" class="hud-objective">FOLLOW THE GOLD</span></div>
+        <div class="guardian-meter" aria-label="Guardian danger"><span class="guardian-meter-label">GUARDIAN</span><span class="guardian-meter-track"><span id="guardian-meter-fill" class="guardian-meter-fill"></span></span></div>
+        <div class="hud-controls">
+          <button id="game-mute-button" class="icon-button" type="button" data-action="toggle-mute" aria-label="Mute audio" aria-pressed="false" title="Mute audio (M)"><svg class="icon sound-on" aria-hidden="true"><use href="#icon-sound"/></svg><svg class="icon sound-off" aria-hidden="true"><use href="#icon-muted"/></svg></button>
+          <button id="pause-button" class="icon-button" type="button" data-action="pause" aria-label="Pause game" aria-haspopup="dialog" aria-controls="pause-overlay" aria-keyshortcuts="Escape P" title="Pause (Esc)"><svg class="icon" aria-hidden="true"><use href="#icon-pause"/></svg></button>
+        </div>
+       </section>
+
+      <aside id="power-up-indicators" class="power-up-indicators" aria-label="Active power-ups" hidden>
+        <div id="magnet-indicator" class="power-up power-up-magnet"><span class="power-up-icon"><svg class="icon" aria-hidden="true"><use href="#icon-magnet"/></svg></span><div class="power-up-info"><span class="power-up-name">Coin magnet <span id="magnet-timer">0s</span></span><progress id="magnet-progress" max="100" value="100" aria-label="Coin magnet time remaining">100%</progress></div><span class="power-up-bind sr-only" data-powerup="magnet" aria-live="polite">Coin magnet inactive</span></div>
+        <div id="shield-indicator" class="power-up power-up-shield"><span class="power-up-icon"><svg class="icon" aria-hidden="true"><use href="#icon-shield"/></svg></span><div class="power-up-info"><span class="power-up-name">Temple shield <span id="shield-timer">0s</span></span><progress id="shield-progress" max="100" value="100" aria-label="Temple shield time remaining">100%</progress></div><span class="power-up-bind sr-only" data-powerup="shield" aria-live="polite">Temple shield inactive</span></div>
+        <div id="boost-indicator" class="power-up power-up-boost"><span class="power-up-icon"><svg class="icon" aria-hidden="true"><use href="#icon-boost"/></svg></span><div class="power-up-info"><span class="power-up-name">Ember boost <span id="boost-timer">0s</span></span><progress id="boost-progress" max="100" value="100" aria-label="Ember boost time remaining">100%</progress></div><span class="power-up-bind sr-only" data-powerup="speed" aria-live="polite">Ember boost inactive</span></div>
+        <div id="multiplier-indicator" class="power-up power-up-multiplier"><span class="power-up-icon"><svg class="icon" aria-hidden="true"><use href="#icon-spark"/></svg></span><div class="power-up-info"><span class="power-up-name">Score surge <span id="multiplier-timer">0s</span></span><progress id="multiplier-progress" max="100" value="100" aria-label="Score surge time remaining">100%</progress></div><span class="power-up-bind sr-only" data-powerup="multiplier" aria-live="polite">Score surge inactive</span></div>
+        <div id="burst-indicator" class="power-up power-up-burst"><span class="power-up-icon"><svg class="icon" aria-hidden="true"><use href="#icon-boost"/></svg></span><div class="power-up-info"><span class="power-up-name">Ember burst <span id="burst-timer">0s</span></span><progress id="burst-progress" max="100" value="100" aria-label="Ember burst time remaining">100%</progress></div><span class="power-up-bind sr-only" data-powerup="burst" aria-live="polite">Ember burst inactive</span></div>
+      </aside>
+
+      <div id="countdown" class="countdown" role="status" aria-live="assertive" aria-atomic="true" hidden><span class="eyebrow">YOUR LEGEND STARTS IN</span><span id="countdown-value" class="countdown-value">3</span><span class="countdown-caption">One path. Endless possibility.</span></div>
+       <div id="game-notification" class="game-notification" role="status" aria-live="polite" aria-atomic="true" hidden><svg class="icon" aria-hidden="true"><use href="#icon-spark"/></svg><span id="notification-text">Power-up collected</span></div>
+       <div id="world-event" class="world-event" role="status" aria-live="polite" hidden></div>
+       <div id="boss-hud" class="boss-hud" hidden><span class="boss-kicker">BOSS ENCOUNTER</span><strong id="boss-name">THE STONE TITAN</strong><progress id="boss-progress" max="100" value="100"></progress></div>
+
+      <section id="pause-overlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="pause-title" aria-describedby="pause-description" tabindex="-1" hidden>
+        <div class="modal-card pause-card">
+          <span class="modal-emblem"><svg class="icon" aria-hidden="true"><use href="#icon-pause"/></svg></span>
+          <p class="eyebrow">TAKE A BREATH</p><h2 id="pause-title">The ruins can wait.</h2><p id="pause-description" class="modal-description">Your expedition is paused. The path will be<br class="desktop-break"> right here when you’re ready.</p>
+          <div class="pause-summary"><span>Current distance</span><strong><span id="pause-distance">0</span><span class="unit">m</span></strong></div>
+          <div class="button-stack">
+            <button id="resume-button" class="button button-primary" type="button" data-action="resume-game"><svg class="icon" aria-hidden="true"><use href="#icon-play"/></svg>Keep running<svg class="icon button-arrow" aria-hidden="true"><use href="#icon-arrow"/></svg></button>
+            <button id="pause-settings-button" class="button button-secondary" type="button" data-action="open-settings" aria-haspopup="dialog" aria-controls="settings-modal"><svg class="icon" aria-hidden="true"><use href="#icon-settings"/></svg>Settings</button>
+            <button id="pause-menu-button" class="button button-quiet" type="button" data-action="return-menu"><svg class="icon" aria-hidden="true"><use href="#icon-home"/></svg>Back to the temple</button>
+          </div><p class="modal-keyboard-hint">Press <kbd>Esc</kbd> to resume</p>
+        </div>
+      </section>
+
+      <section id="game-over-overlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="game-over-title" aria-describedby="game-over-description" tabindex="-1" hidden>
+        <div class="modal-card game-over-card">
+          <span class="modal-emblem"><svg class="icon" aria-hidden="true"><use href="#icon-trophy"/></svg></span>
+          <p class="eyebrow">EVERY RUN TELLS A STORY</p><h2 id="game-over-title">A legend in the making.</h2><p id="game-over-description" class="modal-description"><span id="game-over-reason">The temple keeps its secrets. For now.</span></p>
+          <div id="new-record" class="record-badge" role="status" hidden><svg class="icon" aria-hidden="true"><use href="#icon-spark"/></svg>NEW PERSONAL BEST</div>
+          <div class="final-score-block"><span class="stat-label">YOUR SCORE</span><span id="final-score" class="final-score">0</span><span class="final-best">Personal best <span id="final-best-score">0</span></span></div>
+          <div class="run-results"><div><svg class="icon" aria-hidden="true"><use href="#icon-distance"/></svg><strong><span id="final-distance">0</span><span class="unit">m</span></strong><span class="stat-label">DISTANCE</span></div><div><svg class="icon" aria-hidden="true"><use href="#icon-coin"/></svg><strong id="final-coins">0</strong><span class="stat-label">COINS</span></div><div><svg class="icon" aria-hidden="true"><use href="#icon-boost"/></svg><strong>×<span id="final-multiplier">1</span></strong><span class="stat-label">TOP MULTIPLIER</span></div></div>
+          <div class="button-stack"><button id="restart-button" class="button button-primary" type="button" data-action="restart-game"><svg class="icon" aria-hidden="true"><use href="#icon-restart"/></svg>Run it back<svg class="icon button-arrow" aria-hidden="true"><use href="#icon-arrow"/></svg></button><button id="game-over-menu-button" class="button button-secondary" type="button" data-action="return-menu"><svg class="icon" aria-hidden="true"><use href="#icon-home"/></svg>Back to the temple</button></div>
+        </div>
+      </section>
+
+      <section id="how-to-play-modal" class="overlay modal-layer" role="dialog" aria-modal="true" aria-labelledby="help-title" aria-describedby="help-description" tabindex="-1" hidden>
+        <div class="modal-card help-card">
+          <button id="close-help-button" class="icon-button modal-close" type="button" data-action="close-help" aria-label="Close how to play"><svg class="icon" aria-hidden="true"><use href="#icon-close"/></svg></button>
+          <p class="eyebrow">THE EXPLORER’S FIELD GUIDE</p><h2 id="help-title">Find your rhythm.</h2><p id="help-description" class="modal-description">Run farther. Collect embers. Stay one step ahead.</p>
+          <div class="control-guide">
+            <div class="control-guide-row"><span class="guide-icon"><svg class="icon" aria-hidden="true"><use href="#icon-left"/></svg><svg class="icon" aria-hidden="true"><use href="#icon-right"/></svg></span><div><h3>Change lanes</h3><p>Dodge broken pillars and gaps.</p></div><div class="guide-keys"><kbd>←</kbd><kbd>→</kbd><span>or A / D</span></div></div>
+            <div class="control-guide-row"><span class="guide-icon"><svg class="icon" aria-hidden="true"><use href="#icon-up"/></svg></span><div><h3>Jump</h3><p>Clear low obstacles and leap over gaps.</p></div><div class="guide-keys"><kbd>↑</kbd><kbd>Space</kbd><span>or W</span></div></div>
+            <div class="control-guide-row"><span class="guide-icon"><svg class="icon" aria-hidden="true"><use href="#icon-down"/></svg></span><div><h3>Slide</h3><p>Duck beneath fallen arches.</p></div><div class="guide-keys"><kbd>↓</kbd><kbd>S</kbd></div></div>
+          </div>
+          <div class="touch-tip"><span class="touch-tip-label">ON YOUR PHONE</span><p>Swipe left or right to switch lanes, up to jump, and down to slide. You can also use the on-screen buttons.</p></div>
+          <div class="power-up-guide" aria-label="Power-up guide"><div><span class="guide-power-icon magnet-color"><svg class="icon" aria-hidden="true"><use href="#icon-magnet"/></svg></span><h3>Magnet</h3><p>Bring coins to you.</p></div><div><span class="guide-power-icon shield-color"><svg class="icon" aria-hidden="true"><use href="#icon-shield"/></svg></span><h3>Shield</h3><p>A little protection.</p></div><div><span class="guide-power-icon boost-color"><svg class="icon" aria-hidden="true"><use href="#icon-boost"/></svg></span><h3>Boost</h3><p>Fuel your score.</p></div></div>
+          <p class="guide-footnote"><kbd>Esc</kbd> / <kbd>P</kbd> to pause <span aria-hidden="true">·</span> <kbd>M</kbd> to mute</p>
+          <button id="help-done-button" class="button button-primary" type="button" data-action="close-help">Got it. Let’s explore.<svg class="icon button-arrow" aria-hidden="true"><use href="#icon-arrow"/></svg></button>
+        </div>
+      </section>
+
+      <section id="settings-modal" class="overlay modal-layer" role="dialog" aria-modal="true" aria-labelledby="settings-title" aria-describedby="settings-description" tabindex="-1" hidden>
+        <div class="modal-card settings-card">
+          <button id="close-settings-button" class="icon-button modal-close" type="button" data-action="close-settings" aria-label="Close settings"><svg class="icon" aria-hidden="true"><use href="#icon-close"/></svg></button>
+          <p class="eyebrow">MAKE IT YOUR EXPEDITION</p><h2 id="settings-title">Set the atmosphere.</h2><p id="settings-description" class="modal-description">A few small details. A better adventure.</p>
+          <form id="settings-form" class="settings-form">
+            <fieldset><legend>Sound</legend>
+              <div class="setting-row"><div class="setting-copy"><label for="music-toggle">Temple music</label><p id="music-description">The soundtrack to your escape.</p></div><label class="switch"><input id="music-toggle" type="checkbox" data-setting="music" aria-label="Enable temple music" aria-describedby="music-description" checked><span class="switch-track" aria-hidden="true"></span></label></div>
+              <div class="volume-row"><label for="music-volume">Music volume</label><input id="music-volume" type="range" min="0" max="100" step="5" value="60" data-setting="music-volume"><output id="music-volume-value" for="music-volume">60%</output></div>
+              <div class="setting-row"><div class="setting-copy"><label for="sfx-toggle">Sound effects</label><p id="sfx-description">Every footstep, coin, and close call.</p></div><label class="switch"><input id="sfx-toggle" type="checkbox" data-setting="sfx" aria-label="Enable sound effects" aria-describedby="sfx-description" checked><span class="switch-track" aria-hidden="true"></span></label></div>
+              <div class="volume-row"><label for="sfx-volume">Effects volume</label><input id="sfx-volume" type="range" min="0" max="100" step="5" value="80" data-setting="sfx-volume"><output id="sfx-volume-value" for="sfx-volume">80%</output></div>
+            </fieldset>
+            <fieldset><legend>Experience</legend>
+              <div class="setting-row"><div class="setting-copy"><label for="graphics-quality">Graphics quality</label><p id="graphics-description">Find your balance of detail and speed.</p></div><select id="graphics-quality" data-setting="graphics" aria-describedby="graphics-description"><option value="low">Low</option><option value="medium">Medium</option><option value="high" selected>High</option></select></div>
+              <div class="setting-row"><div class="setting-copy"><label for="camera-shake-toggle">Camera shake</label><p id="camera-shake-description">A little impact for the big moments.</p></div><label class="switch"><input id="camera-shake-toggle" type="checkbox" data-setting="camera-shake" aria-label="Enable camera shake" aria-describedby="camera-shake-description" checked><span class="switch-track" aria-hidden="true"></span></label></div>
+              <div class="setting-row"><div class="setting-copy"><label for="touch-controls-setting">Touch controls</label><p id="touch-controls-description">Show on-screen movement buttons.</p></div><select id="touch-controls-setting" data-setting="touch-controls" aria-describedby="touch-controls-description"><option value="auto" selected>Auto</option><option value="on">Always on</option><option value="off">Off</option></select></div>
+              <div class="setting-row"><div class="setting-copy"><label for="high-contrast-toggle">High contrast</label><p id="high-contrast-description">Sharper color separation for the path and UI.</p></div><label class="switch"><input id="high-contrast-toggle" type="checkbox" data-setting="high-contrast" aria-label="Enable high contrast" aria-describedby="high-contrast-description"><span class="switch-track" aria-hidden="true"></span></label></div>
+              <div class="setting-row"><div class="setting-copy"><label for="large-ui-toggle">Large interface</label><p id="large-ui-description">Increase readable UI scale.</p></div><label class="switch"><input id="large-ui-toggle" type="checkbox" data-setting="large-ui" aria-label="Enable large interface" aria-describedby="large-ui-description"><span class="switch-track" aria-hidden="true"></span></label></div>
+            </fieldset>
+            <button id="settings-done-button" class="button button-primary" type="button" data-action="close-settings">All set<svg class="icon button-arrow" aria-hidden="true"><use href="#icon-arrow"/></svg></button>
+          </form>
+        </div>
+      </section>
+
+      <section id="welcome-modal" class="overlay modal-layer welcome-layer" data-modal="welcome" role="dialog" aria-modal="true" aria-labelledby="welcome-title" hidden>
+        <div class="modal-card welcome-card">
+          <span class="modal-emblem"><svg class="icon" aria-hidden="true"><use href="#icon-temple"/></svg></span>
+          <p class="eyebrow">WELCOME TO THE EMBER TEMPLE</p>
+          <h2 id="welcome-title">Your legend starts here.</h2>
+          <p class="modal-description">Swipe to move. Swipe up to jump. Swipe down to slide.<br>Escape the Guardian, collect treasure, and explore ancient worlds.</p>
+          <div class="welcome-actions"><button class="button button-primary" type="button" data-action="start-adventure">Start adventure<svg class="icon button-arrow" aria-hidden="true"><use href="#icon-arrow"/></svg></button><button class="button button-secondary" type="button" data-action="dismiss-welcome">Explore endless mode</button></div>
+        </div>
+      </section>
+
+      <section id="progression-modal" class="overlay modal-layer" data-modal="progression" role="dialog" aria-modal="true" aria-labelledby="progression-title" hidden>
+        <div class="modal-card progression-card">
+          <button class="icon-button modal-close" type="button" data-action="close-progression" aria-label="Close progression"><svg class="icon" aria-hidden="true"><use href="#icon-close"/></svg></button>
+          <p class="eyebrow">THE EXPLORER’S LEDGER</p><h2 id="progression-title">Characters</h2>
+          <div id="progression-content" data-progression-content></div>
+        </div>
+      </section>
+
+      <nav id="touch-controls" class="touch-controls" aria-label="Touch movement controls">
+        <div class="touch-lanes"><button id="touch-left" class="touch-button" type="button" data-action="left" aria-label="Move one lane left"><svg class="icon" aria-hidden="true"><use href="#icon-left"/></svg><span>LEFT</span></button><button id="touch-right" class="touch-button" type="button" data-action="right" aria-label="Move one lane right"><svg class="icon" aria-hidden="true"><use href="#icon-right"/></svg><span>RIGHT</span></button></div>
+        <div class="touch-moves"><button id="touch-slide" class="touch-button" type="button" data-action="slide" aria-label="Slide under an obstacle"><svg class="icon" aria-hidden="true"><use href="#icon-down"/></svg><span>SLIDE</span></button><button id="touch-jump" class="touch-button touch-jump" type="button" data-action="jump" aria-label="Jump over an obstacle"><svg class="icon" aria-hidden="true"><use href="#icon-up"/></svg><span>JUMP</span></button></div>
+      </nav>
+
+      <p id="game-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+      <noscript><div class="no-script-message">The temple needs JavaScript to come alive. Enable JavaScript, then reload to begin your expedition.</div></noscript>
+    </main>
+  </body>
+</html>
