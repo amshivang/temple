@@ -300,11 +300,11 @@
       this.powerNodes = Object.create(null);
       if (this.nodes.powers) {
         const powerSelectors = {
-          magnet: '[data-power="magnet"], [data-powerup="magnet"]',
-          shield: '[data-power="shield"], [data-powerup="shield"]',
-          speed: '[data-power="speed"], [data-powerup="speed"], [data-powerup="boost"]',
-          multiplier: '[data-power="multiplier"], [data-powerup="multiplier"]',
-          burst: '[data-power="burst"], [data-powerup="burst"]',
+          magnet: '#magnet-indicator, [data-power="magnet"], [data-powerup="magnet"]',
+          shield: '#shield-indicator, [data-power="shield"], [data-powerup="shield"]',
+          speed: '#boost-indicator, [data-power="speed"], [data-powerup="speed"], [data-powerup="boost"]',
+          multiplier: '#multiplier-indicator, [data-power="multiplier"], [data-powerup="multiplier"]',
+          burst: '#burst-indicator, [data-power="burst"], [data-powerup="burst"]',
         };
         for (const type of POWER_TYPES) {
            let node = powerSelectors[type] ? $(powerSelectors[type], this.nodes.powers) : null;
@@ -418,7 +418,7 @@
       this.show('help', false);
       this.show('settings', false);
       this.show('progression', false);
-      this.show('welcome', false);
+      if (state !== STATES.MENU) this.show('welcome', false);
       if (state === STATES.MENU || state === STATES.OVER) { this.show('event', false); this.show('boss', false); }
       if (state === STATES.MENU || state === STATES.OVER) this.show('toast', false);
       document.body.dataset.gameState = state;
@@ -436,14 +436,23 @@
     modal(name, visible) {
       const node = this.nodes[name];
       if (!node) return;
-      if (visible) for (const other of ['help', 'settings', 'progression', 'welcome']) if (other !== name) this.show(other, false);
+      if (visible) {
+        if (!this.activeModal()) this.lastFocusBeforeModal = document.activeElement;
+        for (const other of ['help', 'settings', 'progression', 'welcome']) if (other !== name) this.show(other, false);
+      }
       node.hidden = !visible;
       node.setAttribute('aria-hidden', String(!visible));
       if (visible) {
         node.style.removeProperty('display');
         const focusTarget = $('button, input, select, [tabindex="0"]', node);
         if (focusTarget) focusTarget.focus({ preventScroll: true });
-      } else node.style.display = 'none';
+      } else {
+        node.style.display = 'none';
+        if (!this.activeModal() && this.lastFocusBeforeModal && typeof this.lastFocusBeforeModal.focus === 'function') {
+          this.lastFocusBeforeModal.focus({ preventScroll: true });
+          this.lastFocusBeforeModal = null;
+        }
+      }
     }
     openProgression(section, save) {
       this.progressionSection = section || this.progressionSection || 'characters';
@@ -518,8 +527,9 @@
           const progress = node.querySelector('progress');
           if (timer) timer.textContent = `${seconds}s`;
           if (progress) {
-            const maximum = Number(progress.max) || POWER_INFO[type].duration;
-            progress.value = clamp(game.powers[type] / maximum * 100, 0, 100);
+            const duration = Math.max(0.1, game.powerDuration ? game.powerDuration(type) : POWER_INFO[type].duration);
+            const maxVal = Number(progress.max) || 100;
+            progress.value = clamp(game.powers[type] / duration * maxVal, 0, maxVal);
           }
           if (!timer && !node.querySelector('svg, progress')) node.textContent = value;
         }
@@ -581,7 +591,7 @@
         if ((event.code === 'Space' || event.code === 'Enter') && event.target.closest('button, a')) return;
         event.preventDefault();
         this.onGesture();
-        if (!event.repeat) this.push(action);
+        if (!event.repeat) this.push(action, { fromKeyboard: true });
       }, options);
       const idActions = {
         'start-button': 'start', startButton: 'start', playButton: 'start', 'play-button': 'start',
@@ -1162,8 +1172,8 @@
       this.type = type; this.lane = lane; this.x = CONFIG.lanes[lane]; this.distance = distance; this.segment = segment;
       this.phase = random.range(0, Math.PI * 2); this.bounds = new THREE.Box3(); this.group = new THREE.Group();
       this.group.position.set(this.x, 0, segment.start - distance); segment.group.add(this.group);
-      this.baseY = type === 'flying' || type === 'swarm' ? (type === 'swarm' ? 2.2 : 2.8) : 0.9;
-      this.width = type === 'beast' ? 1.05 : 0.85; this.depth = 1.1; this.top = this.baseY + 0.8; this.bottom = type === 'flying' || type === 'swarm' ? this.baseY - 0.55 : 0;
+      this.baseY = type === 'flying' || type === 'swarm' ? (type === 'swarm' ? 2.2 : 2.8) : 0;
+      this.width = type === 'beast' ? 1.05 : 0.85; this.depth = 1.1; this.top = type === 'flying' || type === 'swarm' ? this.baseY + 0.8 : 1.7; this.bottom = type === 'flying' || type === 'swarm' ? this.baseY - 0.55 : 0;
       const a = assets, g = this.group;
       if (type === 'beast') {
         a.mesh('rock', 'jungleStone', g, 0, 0.85, 0, 0.85, 0.66, 1.15);
@@ -1233,15 +1243,15 @@
       this.safeLane = 1;
       this.nextStart = 0;
     }
-    reset(seed) {
+    reset(seed, startDistance = 0) {
       this.random = new Random(seed);
       this.safeLane = 1;
-      this.nextStart = -CONFIG.segmentLength;
+      this.nextStart = startDistance - CONFIG.segmentLength;
       for (const segment of this.segments) {
         this.generate(segment, this.nextStart);
         this.nextStart += CONFIG.segmentLength;
       }
-      this.update(0, 0);
+      this.update(startDistance, 0);
     }
     generate(segment, start) {
       segment.clear(); segment.start = start;
@@ -1916,6 +1926,7 @@
       this.resize();
       this.reset();
       this.transition(STATES.MENU);
+      if (!this.save.data.seenIntro) this.ui.modal('welcome', true);
       this.frameId = requestAnimationFrame(this.boundFrame);
     }
     createDebugOverlay() {
@@ -2024,12 +2035,12 @@
       this.nextEventDistance = this.startDistance + (this.mode === 'adventure' ? 220 : 320);
       this.nextBossDistance = this.startDistance + (this.mode === 'adventure' ? 780 : 1100);
       this.eventCompleted = false; this.adventureSuccess = false; this.progressClock = 0;
-      this.reviveUsed = false; this.powerUses = 0; this.totalRunTime = 0; this.guardianEscapes = 0;
+      this.revivesRemaining = this.upgradeLevel('revive'); this.powerUses = 0; this.totalRunTime = 0; this.guardianEscapes = 0;
       this.impactTime = 0;
       this.saveClock = 5;
       for (const type of POWER_TYPES) this.powers[type] = 0;
       this.input.clear(); this.player.applyCharacter(this.save.data.selectedCharacter, this.save.data.cosmetics); this.player.reset(); this.guardian.reset();
-      this.particles.reset(); this.cameraRig.reset(); this.track.reset(randomSeed());
+      this.particles.reset(); this.cameraRig.reset(); this.track.reset(randomSeed(), this.startDistance);
       this.distance = this.startDistance;
       this.currentBiome = this.track.biomeAt(this.distance); this.track.update(this.distance, this.time, this);
       this.ui.hudClock = 0;
@@ -2081,6 +2092,7 @@
         }
       }
       if (action === 'dismiss-welcome') { this.save.data.seenIntro = true; this.save.write(); this.ui.modal('welcome', false); return; }
+      if (this.ui.activeModal() && meta && meta.fromKeyboard && ['start', 'start-endless', 'play', 'restart', 'retry', 'jump'].includes(action)) return;
       if (action === 'start-adventure') { this.start('adventure'); return; }
       if (action === 'start-endless' || action === 'start' || action === 'play') {
         if (this.state === STATES.PAUSED) this.resume();
@@ -2162,7 +2174,13 @@
         if (mission.type === type || (mission.type === 'coins' && type === 'coins') || (mission.type === 'near' && (type === 'near' || type === 'enemyDodge'))) item.progress = Math.max(item.progress, Math.min(mission.target, values[mission.type] || amount));
       }
       const daily = this.save.data.daily;
-      if (daily && daily.type === type) daily.progress = Math.max(daily.progress, Math.min(daily.target, values[type] || amount));
+      if (daily && daily.type === type) {
+        if (daily.id === 'dailyCoins') {
+          if (this.powerUses === 0) daily.progress = Math.max(daily.progress, Math.min(daily.target, this.coins));
+        } else {
+          daily.progress = Math.max(daily.progress, Math.min(daily.target, values[type] || amount));
+        }
+      }
       for (const achievement of ACHIEVEMENT_DEFS) {
         const item = this.save.data.achievements[achievement.id];
         if (!item || item.unlocked) continue;
@@ -2217,9 +2235,9 @@
     }
     die(reason) {
       if (this.state !== STATES.RUNNING) return;
-      const canRevive = this.powers.phoenix > 0 || (!this.reviveUsed && this.upgradeLevel('revive') > 0);
+      const canRevive = this.powers.phoenix > 0 || this.revivesRemaining > 0;
       if (canRevive) {
-        if (this.powers.phoenix > 0) this.powers.phoenix = 0; else this.reviveUsed = true;
+        if (this.powers.phoenix > 0) this.powers.phoenix = 0; else this.revivesRemaining--;
         this.player.y = 0; this.player.vy = this.jumpVelocity() * 0.72; this.player.grounded = false; this.player.invulnerable = 2;
         this.guardian.threat = 0.4; this.combo = 0; this.cameraRig.shake = 0.55; this.particles.emit(this.player.x, 1, 0, POWER_INFO.phoenix.color, 36, 5, -2); this.audio.sfx('shield'); this.ui.toast('PHOENIX RESCUE · KEEP RUNNING', 2); return;
       }

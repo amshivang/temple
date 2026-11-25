@@ -7,15 +7,15 @@
   </p>
 
   # 🏛️ Ruins of the Ember Temple
-  ### High-Performance 2.5D Endless Runner Canvas Game Engine
+  ### Three.js 3D Endless Runner Web Game
 
   <p>
-    <em>A 60 FPS pseudo-3D perspective endless runner game engineered purely in vanilla JavaScript and HTML5 Canvas, featuring procedural obstacle sequencing, dynamic particle physics, and zero external runtime dependencies.</em>
+    <em>A 60 FPS three-lane 3D endless runner built with vanilla JavaScript and Three.js (ES module CDN import), featuring Endless &amp; Adventure modes, dynamic obstacle &amp; boss sequencing, procedural Web Audio synthesis, and local progression storage.</em>
   </p>
 
   <p>
     <a href="https://amshivang.github.io/temple/"><img src="https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-0284C7?style=for-the-badge&logo=githubpages&logoColor=white" alt="Live Demo"/></a>
-    <a href="#"><img src="https://img.shields.io/badge/Engine-Vanilla%20JS%20Canvas-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" alt="Vanilla JS"/></a>
+    <a href="#"><img src="https://img.shields.io/badge/Engine-Three.js%20%2B%20Vanilla%20JS-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" alt="Three.js + Vanilla JS"/></a>
     <a href="#"><img src="https://img.shields.io/badge/Performance-60%20FPS%20Native-059669?style=for-the-badge&logo=speedtest&logoColor=white" alt="60 FPS Performance"/></a>
     <a href="#"><img src="https://img.shields.io/badge/Controls-Keyboard%20%2B%20Touch%20Swipe-8B5CF6?style=for-the-badge" alt="Controls"/></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-EAB308?style=for-the-badge" alt="License: MIT"/></a>
@@ -38,9 +38,9 @@
 
 ## 📌 Overview
 
-**Ruins of the Ember Temple** is an action-packed 2.5D endless runner arcade game engineered from first principles using vanilla web technologies. Inspired by classic arcade runners, the game projects a pseudo-3D perspective hallway onto a 2D HTML5 `<canvas>` element without using heavy 3D rendering engines or external game libraries.
+**Ruins of the Ember Temple** is an action-packed 3D three-lane runner built with vanilla web technologies and Three.js (`THREE.WebGLRenderer`) loaded as an ES module without build tooling or bundling steps.
 
-Players navigate an ancient, crumbling subterranean temple, dodging stone pillars, sliding beneath collapsing archways, vaulting over fiery hazard chasms, and gathering glowing ember coins to fuel high-score multipliers.
+Players navigate seven procedural temple biomes (Sandstone Temple, Emerald Jungle, Cyan Falls, Crystal Cavern, Lava Ruins, Mystic Sky Ruins, and Moonlit Ruins), dodging stone pillars, enemies, and gaps while collecting coins, upgrades, and power-ups across Endless and Adventure modes.
 
 🌐 **Play the Live Game:** [https://amshivang.github.io/temple/](https://amshivang.github.io/temple/)
 
@@ -48,8 +48,8 @@ Players navigate an ancient, crumbling subterranean temple, dodging stone pillar
 
 ## ✨ Key Features
 
-- **⚡ Zero-Dependency 60 FPS Canvas Engine**: Renders crisp, hardware-accelerated animations directly via `window.requestAnimationFrame` with zero runtime bloat.
-- **📐 Pseudo-3D Perspective Projection**: Implements custom depth-scaling algorithms (`Z`-coordinate interpolation) to simulate three-dimensional perspective, scale velocity, and horizon vanishing points.
+- **⚡ Zero-Build WebGL / Three.js Engine**: Renders 60 FPS procedural biomes directly on `<canvas>` via `requestAnimationFrame` and Three.js without npm install or bundlers.
+- **🗺️ Endless & Adventure Modes**: Play infinitely scaling runs or biome-staged Adventure objectives with relics, world events, and boss encounters.
 - **📱 Dual Desktop & Mobile Touch Controls**: Seamlessly switches between keyboard controls and gesture-based touch swipe tracking (swipe left/right to change lanes, swipe up to jump, swipe down to slide).
 - **💥 Dynamic Particle & Lighting System**: Features ambient glowing particle embers, collision sparks, dust trails, and procedural flame effects.
 - **🪙 Power-Up Ecosystem & Multipliers**: Collect Magnet Charms (attracts coins within radius), Shield Runes (absorbs single impact), and Ember Multipliers (boosts score velocity).
